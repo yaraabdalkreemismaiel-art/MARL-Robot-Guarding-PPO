@@ -42,6 +42,36 @@ flowchart TD
 - **Gymnasium:** Interface for defining the reinforcement learning environment.
 - **Stable-Baselines3:** PPO implementation and training utilities.
 - **NumPy and PyTorch:** Numerical operations and model computation.
+  ## 3. Software and Tools
+
+The project uses Webots for robot simulation and Python-based tools for reinforcement learning, environment integration, and result visualization.
+
+| Software / Library | Version / Requirement | Purpose |
+|---|---|---|
+| Webots | R2025a | Robot simulation |
+| Python | 3.10 | Training and environment integration |
+| PyTorch | `torch>=2.8.0` | Neural network computation |
+| Gymnasium | `gymnasium>=1.3.0` | Reinforcement learning environment interface |
+| Stable-Baselines3 | `stable-baselines3>=2.9.0` | PPO implementation and training |
+| NumPy | `numpy>=1.26.0,<2.0.0` | Numerical computation |
+| Matplotlib | `matplotlib>=3.5.0` | Plotting and visualization |
+
+### Installation
+
+Install the Python dependencies using:
+
+```bash
+python -m pip install "torch>=2.8.0" "gymnasium>=1.3.0" "stable-baselines3>=2.9.0" "numpy>=1.26.0,<2.0.0" "matplotlib>=3.5.0"
+```
+
+Python 3.10 is the specified Python version for this project. Webots is installed separately.
+
+### Reproducibility Note
+
+The listed package constraints specify the required version ranges, not necessarily the exact versions installed during the original experiments. For reproducibility, the resolved package versions should be recorded from the Python environment used for training.
+
+- Webots download: https://cyberbotics.com/#download
+- Python 3.10: https://www.python.org/downloads/release/python-3100/
 
 ## 4. Environment and Robot
 
