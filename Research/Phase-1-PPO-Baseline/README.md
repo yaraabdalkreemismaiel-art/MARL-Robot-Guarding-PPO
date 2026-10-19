@@ -111,16 +111,83 @@ These values describe the configuration in the training script. They do not, by 
 
 ## 6. Reward Function
 
-The reward function is designed to encourage the robot to reach the target and make progress toward it.
+The reward function encourages the robot to reach the target and make progress toward it.
 
 - **Target reached:** A reward of +10 is given when the target is reached for the first time in the current approach.
 - **Progress toward target:** The reward includes 100 times the reduction in distance to the target since the previous step.
-- **Heading alignment:** A small term, 0.1 times the cosine of the angular difference, encourages the robot to face the target.
+- **Heading alignment:** A term of 0.1 times the cosine of the angular difference encourages the robot to face the target.
 - **Obstacle proximity:** A penalty is applied when the robot is closer than 0.20 m to the defined obstacle.
-- **Boundary violation:** A penalty of -5 is applied when the robot's distance from the environment origin exceeds 0.8 m.
+- **Boundary violation:** A penalty of 5 is applied when the robot's distance from the environment origin exceeds 0.8 m.
 
 The reward function is a design choice and must be assessed through controlled experiments and evaluation metrics.
 
+### 6.1. Overall Reward Function
+
+**Case 1 — First target arrival**
+
+$$
+R_t = 10
+$$
+
+if $d_t < 0.1$ and `has_reached` is `False`.
+
+**Case 2 — Target arrival already registered**
+
+$$
+R_t = 0
+$$
+
+if $d_t < 0.1$ and `has_reached` is `True`.
+
+**Case 3 — Target not reached**
+
+$$
+R_t = 100p_t + 0.1\cos(\Delta\theta_t) - P_o(t) - P_b(t)
+$$
+
+if $d_t \geq 0.1$.
+
+The progress term is
+
+$$
+p_t = d_{\mathrm{prev}} - d_t
+$$
+
+when the previous target distance is available. Otherwise, $p_t = 0$.
+
+The obstacle penalty is
+
+$$
+P_o(t) =
+\begin{cases}
+0.125 \dfrac{0.20-d_o(t)}{0.20}, & d_o(t)<0.20,\\
+0, & d_o(t)\geq 0.20.
+\end{cases}
+$$
+
+The boundary penalty is
+
+$$
+P_b(t) =
+\begin{cases}
+5, & \sqrt{x_t^2+y_t^2}>0.8,\\
+0, & \text{otherwise}.
+\end{cases}
+$$
+
+**Variable definitions**
+
+- $R_t$: Total reward at time step $t$.
+- $d_t$: Current distance to the target.
+- $d_{\mathrm{prev}}$: Previously stored distance to the target.
+- $p_t$: Progress toward the target.
+- $\Delta\theta_t$: Angular difference between the robot heading and target direction.
+- $d_o(t)$: Distance between the robot and the obstacle.
+- $P_o(t)$: Obstacle proximity penalty.
+- $P_b(t)$: Boundary penalty.
+- $(x_t,y_t)$: Robot position coordinates relative to the environment origin.
+
+**Source code:** `WebotsGymEnv.py` — `_compute_reward()`.
 ## 7. Saved Models and Training Artifacts
 
 The supplied project archive contains model files and normalization statistics in `models_stage_Obs/`.
