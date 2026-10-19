@@ -37,15 +37,6 @@ flowchart TD
 
 ## 3. Software and Tools
 
-- **Webots:** Robot simulation environment.
-- **Python:** Training and environment integration.
-- **Gymnasium:** Interface for defining the reinforcement learning environment.
-- **Stable-Baselines3:** PPO implementation and training utilities.
-- **NumPy and PyTorch:** Numerical operations and model computation.
-  ## 3. Software and Tools
-
-The project uses Webots for robot simulation and Python-based tools for reinforcement learning, environment integration, and result visualization.
-
 | Software / Library | Version / Requirement | Purpose |
 |---|---|---|
 | Webots | R2025a | Robot simulation |
