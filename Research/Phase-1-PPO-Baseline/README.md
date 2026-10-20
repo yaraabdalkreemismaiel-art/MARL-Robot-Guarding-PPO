@@ -119,136 +119,90 @@ The reward function encourages the robot to reach the target and make progress t
 - **Obstacle proximity:** A penalty is applied when the robot is closer than 0.20 m to the defined obstacle.
 - **Boundary violation:** A penalty of 5 is applied when the robot's distance from the environment origin exceeds 0.8 m.
 
-The reward function is a design choice and must be assessed through controlled experiments and evaluation metrics.
-**Case 1 — First registered target arrival**
+## Overall Reward Function
 
-When the target distance is less than the waypoint radius:
-
-$$
-R_t = 10
-$$
-
-if \(d_t < 0.1\) and `has_reached` is `False`.
+The reward function is defined as a piecewise function covering target arrival and normal navigation:
 
 $$
-R_t = 100p_t + 0.1\cos(\Delta\theta_t) - P_o(t) - P_b(t)
-$$
-
-## 6. Reward Function
-
-The reward function is implemented in `WebotsGymEnv.py`, within the `_compute_reward()` method. It evaluates the robot's progress toward the target, its heading alignment, its proximity to the defined obstacle, and its distance from the environment origin. A separate reward is assigned when the robot reaches the target region.
-
-### 6.1. Overall Reward Function
-
-Let \(R_t\) denote the reward at time step \(t\). The reward is calculated according to the following conditions.
-
-**Case 1 — First registered target arrival**
-
-$$
-R_t = 10
-$$
-
-if \(d_t < r_g\) and `has_reached` is `False`.
-
-**Case 2 — Target arrival already registered**
-
-$$
-R_t = 0
-$$
-
-if \(d_t < r_g\) and `has_reached` is `True`.
-
-**Case 3 — Target not reached**
-
-$$
-R_t = 100p_t + 0.1\cos(\Delta\theta_t) - P_o(t) - P_b(t)
-$$
-
-if \(d_t \geq r_g\).
-
-The target radius is defined as
-
-$$
-r_g = 0.1 \text{ m}
-$$
-
-### 6.2. Reward Components
-
-**1. Progress Toward the Target**
-
-The progress term measures the change in distance between consecutive steps:
-
-$$
-p_t = d_{t-1} - d_t
-$$
-
-If the previous target distance is unavailable, the progress term is set to zero:
-
-$$
-p_t = 0
-$$
-
-A positive value of \(p_t\) indicates that the robot has moved closer to the target, whereas a negative value indicates that the distance has increased. The progress contribution to the reward is \(100p_t\).
-
-**2. Heading Alignment**
-
-The heading alignment contribution is defined as
-
-$$
-R_{\mathrm{heading}} = 0.1\cos(\Delta\theta_t)
-$$
-
-where \(\Delta\theta_t\) is the normalized angular difference between the robot's heading and the direction toward the target. The cosine term provides a positive contribution when the robot faces toward the target and a negative contribution when it faces away from it.
-
-**3. Obstacle Proximity Penalty**
-
-The obstacle penalty is applied when the distance to the defined obstacle is less than \(0.20\) m:
-
-$$
-P_o(t) =
+R_t =
 \begin{cases}
-0.125 \dfrac{0.20-d_o(t)}{0.20}, & d_o(t)<0.20 \\
-0, & d_o(t)\geq 0.20
+10, & d_t < r_g \land h_t = 0 \\[6pt]
+0, & d_t < r_g \land h_t = 1 \\[6pt]
+100p_t + 0.1\cos(\Delta\theta_t) - P_o - P_b,
+& d_t \geq r_g
 \end{cases}
 $$
 
-Here, \(d_o(t)\) is the distance between the robot and the defined obstacle. The penalty increases as this distance decreases below the threshold of \(0.20\) m.
+### 1. Target Arrival Condition
 
-**4. Boundary Penalty**
-
-A boundary penalty is applied when the robot's Euclidean distance from the environment origin exceeds \(0.8\) m:
+The distance between the robot and the target is calculated as:
 
 $$
-P_b(t) =
+d_t = \sqrt{(x_t-x_g)^2+(y_t-y_g)^2}
+$$
+
+- \(d_t\): Distance between the robot and the target.
+- \(r_g = 0.1\,\text{m}\): Target arrival radius.
+- \(h_t \in \{0,1\}\): Arrival flag (`has_reached`), where \(0\) indicates that arrival has not yet been recorded and \(1\) indicates that it has.
+
+### 2. Progress Reward
+
+$$
+p_t =
 \begin{cases}
-5, & \sqrt{x_t^2+y_t^2}>0.8 \\
+d_{t-1}-d_t, & \text{if } d_{t-1} \text{ is available} \\[4pt]
 0, & \text{otherwise}
 \end{cases}
 $$
 
-where \(x_t\) and \(y_t\) are the robot's position coordinates relative to the environment origin. The penalty is subtracted from the reward when the specified boundary condition is violated.
+Here, \(p_t\) represents the change in distance to the target. It is positive when the robot moves closer to the target.
 
-### 6.3. Symbol Definitions
+### 3. Directional Reward
 
-| Symbol | Definition | Unit |
-|---|---|---|
-| \(R_t\) | Total reward at time step \(t\) | Dimensionless |
-| \(d_t\) | Current distance to the target | m |
-| \(d_{t-1}\) | Previously stored target distance | m |
-| \(r_g\) | Target-reaching radius | m |
-| \(p_t\) | Change in target distance between consecutive steps | m |
-| \(\Delta\theta_t\) | Normalized angular difference between robot heading and target direction | rad |
-| \(d_o(t)\) | Distance between the robot and the defined obstacle | m |
-| \(P_o(t)\) | Obstacle proximity penalty | Dimensionless |
-| \(P_b(t)\) | Boundary penalty | Dimensionless |
-| \(x_t,y_t\) | Robot position coordinates relative to the environment origin | m |
+$$
+\Delta\theta_t =
+\operatorname{wrap}(\psi_t-\theta_t)
+$$
 
-### 6.4. Implementation Notes
+$$
+\theta_t =
+\operatorname{atan2}(y_g-y_t,\ x_g-x_t)
+$$
 
-- **Target-arrival state:** The variable `has_reached` prevents repeated arrival rewards while the robot remains inside the target region after an arrival has been registered. The state is reset when the robot moves outside the target radius, allowing another arrival reward if it subsequently re-enters the region.
-- **Reward structure:** Outside the target region, the reward combines progress toward the target and heading alignment, while subtracting obstacle proximity and boundary penalties.
-- **Reward coefficients:** The coefficients and thresholds are implementation-specific design choices. Their suitability should be assessed experimentally rather than assumed to guarantee successful navigation.
+- \(\psi_t\): Current robot heading (`yaw`).
+- \(\theta_t\): Angle from the robot's position toward the target.
+- \(\operatorname{wrap}(\cdot)\): Normalizes the angular difference to the interval \([-\pi,\pi]\).
 
+### 4. Obstacle Penalty
+
+$$
+P_o =
+\begin{cases}
+1.25(0.1)\dfrac{0.20-d_o}{0.20},
+& d_o < 0.20 \\[8pt]
+0, & d_o \geq 0.20
+\end{cases}
+$$
+
+- \(d_o\): Distance between the robot and the obstacle.
+- \(0.20\,\text{m}\): Safety distance specified in the code.
+- \(1.25\): Penalty scaling factor applied in the reward calculation.
+
+### 5. Boundary Penalty
+
+$$
+P_b =
+\begin{cases}
+5, & \sqrt{x_t^2+y_t^2}>0.8 \\[4pt]
+0, & \text{otherwise}
+\end{cases}
+$$
+
+Here, \(x_t\) and \(y_t\) are the robot's coordinates relative to the environment's center.
+
+### Note
+
+The piecewise function describes the reward returned by the reward calculation. When the robot enters the target radius, one of the two arrival cases applies instead of the normal navigation reward. Episode termination (`terminated`) is handled separately in the code, although it uses the same target-distance condition.
 **Source code:** `WebotsGymEnv.py` — `_compute_reward()`.
 ## 7. Saved Models and Training Artifacts
 
